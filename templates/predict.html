@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhishGuard - Prediction Console</title>
+    <meta name="description" content="Enter network parameters to classify website security risk.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        :root {
+            --bg-color: #DFD5CC;
+            --text-main: #040404;
+            --text-muted: rgba(4, 4, 4, 0.65);
+            --primary: #FAC402;
+            --danger: #EC0926;
+            --card-border: rgba(4, 4, 4, 0.15);
+            --font-family: 'Outfit', sans-serif;
+            --font-body: 'Inter', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-body);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.5;
+        }
+
+        /* Navigation */
+        nav {
+            background: var(--bg-color);
+            border-bottom: 2px solid var(--card-border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: var(--font-family);
+            font-weight: 700;
+            font-size: 1.35rem;
+            color: var(--text-main);
+            text-decoration: none;
+        }
+
+        .nav-brand i {
+            color: var(--danger);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .nav-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s ease;
+            font-size: 0.95rem;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--danger);
+        }
+
+        /* Content Layout */
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 2rem;
+        }
+
+        @media (max-width: 992px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                position: static !important;
+            }
+        }
+
+        .main-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .panel-title h1 {
+            font-family: var(--font-family);
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .panel-title p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .form-actions-top {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.6rem 1.25rem;
+            border-radius: 8px;
+            font-family: var(--font-family);
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .btn-outline {
+            background: var(--bg-color);
+            color: var(--text-main);
+            border: 1px solid var(--text-main);
+        }
+
+        .btn-outline:hover {
+            color: var(--danger);
+            border-color: var(--danger);
+        }
+
+        .btn-primary {
+            background: var(--text-main);
+            color: var(--bg-color);
+            border: none;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--primary);
+            color: var(--text-main);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Predict Form Grid */
+        .predict-form {
+            background: var(--bg-color);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 1.75rem;
+        }
+
+        .inputs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .input-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-main);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .input-limit {
+            font-size: 0.75rem;
+            color: var(--danger);
+            font-weight: 600;
+        }
+
+        .input-field {
+            background: var(--bg-color);
+            border: 1px solid var(--text-main);
+            border-radius: 6px;
+            padding: 0.5rem 0.75rem;
+            color: var(--text-main);
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .input-field:focus {
+            border-color: var(--danger);
+        }
+
+        /* Form invalid highlight */
+        .input-field:invalid {
+            border-color: var(--danger);
+            background: rgba(236, 9, 38, 0.08);
+        }
+
+        .form-footer {
+            display: flex;
+            justify-content: flex-end;
+            border-top: 1px solid var(--card-border);
+            padding-top: 1.25rem;
+        }
+
+        /* Sidebar prediction widget */
+        .sidebar {
+            position: sticky;
+            top: 5.5rem;
+            align-self: start;
+        }
+
+        .result-card {
+            background: var(--bg-color);
+            border: 2px solid var(--text-main);
+            border-radius: 12px;
+            padding: 1.75rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            min-height: 280px;
+            justify-content: center;
+            transition: border-color 0.3s ease;
+        }
+
+        .result-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.25rem;
+            transition: all 0.3s ease;
+            color: var(--bg-color);
+        }
+
+        .result-icon.neutral {
+            background: rgba(4, 4, 4, 0.08);
+            color: var(--text-main);
+            border: 1px solid var(--text-main);
+        }
+
+        .result-icon.loading {
+            background: var(--primary);
+            color: var(--text-main);
+            border: 1px solid var(--text-main);
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+
+        .result-icon.legit {
+            background: var(--text-main);
+            color: var(--bg-color);
+            border: 1px solid var(--text-main);
+        }
+
+        .result-icon.phish {
+            background: var(--danger);
+            color: var(--bg-color);
+            border: 1px solid var(--danger);
+        }
+
+        .result-title {
+            font-family: var(--font-family);
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+        }
+
+        .result-body {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .result-badge {
+            margin-top: 1rem;
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            text-transform: uppercase;
+            color: var(--bg-color);
+        }
+
+        .result-badge.legit {
+            background: var(--text-main);
+        }
+
+        .result-badge.phish {
+            background: var(--danger);
+        }
+
+        /* Spinner animation */
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.08); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Footer */
+        footer {
+            margin-top: auto;
+            text-align: center;
+            padding: 2rem 0;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--card-border);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <nav>
+        <a href="/" class="nav-brand">
+            <i data-lucide="shield-alert" style="width: 24px; height: 24px;"></i>
+            <span>PhishGuard</span>
+        </a>
+        <div class="nav-links">
+            <a href="/predict" class="nav-link active">Predict Risk</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        
+        <!-- Main Form Panel -->
+        <main class="main-panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <h1>Predict Website Risk</h1>
+                    <p>Enter the 30 features extracted from the URL. All values are strict integers matching dataset constraints.</p>
+                </div>
+                <div class="form-actions-top">
+                    <button class="btn btn-outline" onclick="clearForm()">
+                        <i data-lucide="rotate-ccw" style="width: 16px; height: 16px;"></i>
+                        <span>Reset</span>
+                    </button>
+                    <button class="btn btn-outline" onclick="randomizeForm()">
+                        <i data-lucide="dices" style="width: 16px; height: 16px;"></i>
+                        <span>Randomize Fields</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Prediction Form -->
+            <form id="prediction-form" class="predict-form" onsubmit="submitPrediction(event)">
+                <div class="inputs-grid" id="form-grid"></div>
+                <div class="form-footer">
+                    <button type="submit" id="predict-btn" class="btn btn-primary">
+                        <i data-lucide="shield-question" style="width: 18px; height: 18px;"></i>
+                        <span>Predict Security Status</span>
+                    </button>
+                </div>
+            </form>
+        </main>
+
+        <!-- Prediction Result Sidebar -->
+        <aside class="sidebar">
+            <div class="result-card" id="result-widget">
+                <div class="result-icon neutral" id="result-icon-box">
+                    <i data-lucide="shield" style="width: 28px; height: 28px;"></i>
+                </div>
+                <h3 class="result-title" id="result-title">Awaiting Input</h3>
+                <p class="result-body" id="result-desc">Populate the values on the left and submit the form to receive the ML model classification.</p>
+                <div id="result-badge-container"></div>
+            </div>
+        </aside>
+
+    </div>
+
+    <footer>
+        <p>PhishGuard &bull; Minimal Prediction Interface</p>
+    </footer>
+
+    <script>
+        // Columns Schema mapping from dataset limits
+        const columns = [
+            { code: "having_IP_Address", name: "IP Address presence", min: -1, max: 1 },
+            { code: "URL_Length", name: "URL Length", min: -1, max: 1 },
+            { code: "Shortining_Service", name: "Shortening Service", min: -1, max: 1 },
+            { code: "having_At_Symbol", name: "At Symbol Presence", min: -1, max: 1 },
+            { code: "double_slash_redirecting", name: "Double Slash Redirecting", min: -1, max: 1 },
+            { code: "Prefix_Suffix", name: "Prefix/Suffix Dash", min: -1, max: 1 },
+            { code: "having_Sub_Domain", name: "Subdomain Count", min: -1, max: 1 },
+            { code: "SSLfinal_State", name: "SSL State", min: -1, max: 1 },
+            { code: "Domain_registeration_length", name: "Domain Registration Length", min: -1, max: 1 },
+            { code: "Favicon", name: "Favicon Domain Match", min: -1, max: 1 },
+            { code: "port", name: "Non-standard Port", min: -1, max: 1 },
+            { code: "HTTPS_token", name: "HTTPS Token in Domain", min: -1, max: 1 },
+            { code: "Request_URL", name: "Request URL Source", min: -1, max: 1 },
+            { code: "URL_of_Anchor", name: "Anchor URL Source", min: -1, max: 1 },
+            { code: "Links_in_tags", name: "Links in Tags", min: -1, max: 1 },
+            { code: "SFH", name: "Server Form Handler", min: -1, max: 1 },
+            { code: "Submitting_to_email", name: "Mailto: Form Submission", min: -1, max: 1 },
+            { code: "Abnormal_URL", name: "Abnormal URL Structure", min: -1, max: 1 },
+            { code: "Redirect", name: "Redirection Count", min: 0, max: 1 },
+            { code: "on_mouseover", name: "On Mouseover Status", min: -1, max: 1 },
+            { code: "RightClick", name: "Right-Click Disable", min: -1, max: 1 },
+            { code: "popUpWidnow", name: "Popup Window Fields", min: -1, max: 1 },
+            { code: "Iframe", name: "Iframe Usage", min: -1, max: 1 },
+            { code: "age_of_domain", name: "Domain Age", min: -1, max: 1 },
+            { code: "DNSRecord", name: "DNS Record Check", min: -1, max: 1 },
+            { code: "web_traffic", name: "Web Traffic Rank", min: -1, max: 1 },
+            { code: "Page_Rank", name: "Page Rank Value", min: -1, max: 1 },
+            { code: "Google_Index", name: "Google Index Status", min: -1, max: 1 },
+            { code: "Links_pointing_to_page", name: "Incoming Links Count", min: -1, max: 1 },
+            { code: "Statistical_report", name: "Statistical Report Match", min: -1, max: 1 }
+        ];
+
+        // Build the form inputs dynamically
+        function buildForm() {
+            const grid = document.getElementById("form-grid");
+            grid.innerHTML = "";
+
+            columns.forEach(col => {
+                const group = document.createElement("div");
+                group.className = "input-group";
+
+                group.innerHTML = `
+                    <label class="input-label" for="${col.code}">
+                        <span>${col.name}</span>
+                        <span class="input-limit">[${col.min}, ${col.max}]</span>
+                    </label>
+                    <input 
+                        type="number" 
+                        id="${col.code}" 
+                        name="${col.code}" 
+                        min="${col.min}" 
+                        max="${col.max}" 
+                        step="1" 
+                        required 
+                        class="input-field" 
+                        placeholder="Enter ${col.min} to ${col.max}"
+                    >
+                `;
+                grid.appendChild(group);
+            });
+        }
+
+        // Randomize Form values
+        function randomizeForm() {
+            columns.forEach(col => {
+                const input = document.getElementById(col.code);
+                if (input) {
+                    const randomVal = Math.floor(Math.random() * (col.max - col.min + 1)) + col.min;
+                    input.value = randomVal;
+                }
+            });
+        }
+
+        // Clear Form values
+        function clearForm() {
+            document.getElementById("prediction-form").reset();
+            resetResultWidget();
+        }
+
+        function resetResultWidget() {
+            const widget = document.getElementById("result-widget");
+            const iconBox = document.getElementById("result-icon-box");
+            const title = document.getElementById("result-title");
+            const desc = document.getElementById("result-desc");
+            const badgeContainer = document.getElementById("result-badge-container");
+
+            widget.style.borderColor = "var(--text-main)";
+            iconBox.className = "result-icon neutral";
+            iconBox.innerHTML = `<i data-lucide="shield" style="width: 28px; height: 28px;"></i>`;
+            title.innerText = "Awaiting Input";
+            desc.innerText = "Populate the values on the left and submit the form to receive the ML model classification.";
+            badgeContainer.innerHTML = "";
+            lucide.createIcons();
+        }
+
+        // Form Submit
+        async function submitPrediction(e) {
+            e.preventDefault();
+
+            const form = document.getElementById("prediction-form");
+            const predictBtn = document.getElementById("predict-btn");
+            const widget = document.getElementById("result-widget");
+            const iconBox = document.getElementById("result-icon-box");
+            const title = document.getElementById("result-title");
+            const desc = document.getElementById("result-desc");
+            const badgeContainer = document.getElementById("result-badge-container");
+
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const payload = {};
+            columns.forEach(col => {
+                const input = document.getElementById(col.code);
+                payload[col.code] = parseInt(input.value, 10);
+            });
+
+            // Set loading state
+            predictBtn.disabled = true;
+            predictBtn.innerHTML = `<i data-lucide="loader-2" class="spinner" style="width: 18px; height: 18px;"></i><span>Predicting...</span>`;
+            
+            widget.style.borderColor = "var(--text-main)";
+            iconBox.className = "result-icon loading";
+            iconBox.innerHTML = `<i data-lucide="refresh-cw" class="spinner" style="width: 28px; height: 28px;"></i>`;
+            title.innerText = "Analyzing Features";
+            desc.innerText = "Transmitting parameters to ML endpoint and evaluating classification trees...";
+            badgeContainer.innerHTML = "";
+            lucide.createIcons();
+
+            try {
+                const response = await fetch("/predict", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    const isLegitimate = result.label === "Legitimate";
+
+                    if (isLegitimate) {
+                        widget.style.borderColor = "var(--text-main)";
+                        iconBox.className = "result-icon legit";
+                        iconBox.innerHTML = `<i data-lucide="shield-check" style="width: 28px; height: 28px;"></i>`;
+                        title.innerText = "Legitimate Website";
+                        desc.innerText = `The model analyzed the 30 indicators and classified this URL signature as safe with class prediction (${result.prediction}).`;
+                        badgeContainer.innerHTML = `<span class="result-badge legit">Legitimate</span>`;
+                    } else {
+                        widget.style.borderColor = "var(--danger)";
+                        iconBox.className = "result-icon phish";
+                        iconBox.innerHTML = `<i data-lucide="shield-alert" style="width: 28px; height: 28px;"></i>`;
+                        title.innerText = "Phishing Signature Detected";
+                        desc.innerText = `Warning! The input values match patterns of fraudulent portals. Model prediction class (${result.prediction}).`;
+                        badgeContainer.innerHTML = `<span class="result-badge phish">Phishing Risk</span>`;
+                    }
+                } else {
+                    const errText = await response.text();
+                    widget.style.borderColor = "var(--danger)";
+                    iconBox.className = "result-icon neutral";
+                    iconBox.innerHTML = `<i data-lucide="alert-triangle" style="width: 28px; height: 28px;"></i>`;
+                    title.innerText = "Prediction Error";
+                    desc.innerText = `Server returned status ${response.status}: ${errText || "Invalid parameters or model not trained yet"}`;
+                }
+            } catch (error) {
+                widget.style.borderColor = "var(--danger)";
+                iconBox.className = "result-icon neutral";
+                iconBox.innerHTML = `<i data-lucide="alert-circle" style="width: 28px; height: 28px;"></i>`;
+                title.innerText = "Network Error";
+                desc.innerText = `Failed to connect to backend endpoint. Details: ${error.message}`;
+            } finally {
+                predictBtn.disabled = false;
+                predictBtn.innerHTML = `<i data-lucide="shield-question" style="width: 18px; height: 18px;"></i><span>Predict Security Status</span>`;
+                lucide.createIcons();
+            }
+        }
+
+        // Initialize Form
+        buildForm();
+        lucide.createIcons();
+    </script>
+</body>
+</html>

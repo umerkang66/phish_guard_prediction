@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhishGuard - Data Schema & Training Console</title>
+    <meta name="description" content="Overview of dataset columns and model training pipeline.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        :root {
+            --bg-color: #DFD5CC;
+            --text-main: #040404;
+            --text-muted: rgba(4, 4, 4, 0.65);
+            --primary: #FAC402;
+            --danger: #EC0926;
+            --card-border: rgba(4, 4, 4, 0.15);
+            --font-family: 'Outfit', sans-serif;
+            --font-body: 'Inter', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-body);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.5;
+        }
+
+        /* Navigation */
+        nav {
+            background: var(--bg-color);
+            border-bottom: 2px solid var(--card-border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: var(--font-family);
+            font-weight: 700;
+            font-size: 1.35rem;
+            color: var(--text-main);
+            text-decoration: none;
+        }
+
+        .nav-brand i {
+            color: var(--danger);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .nav-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s ease;
+            font-size: 0.95rem;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--danger);
+        }
+
+        /* Content Container */
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+            flex: 1;
+        }
+
+        /* Training Console Card */
+        .training-card {
+            background: var(--bg-color);
+            border: 2px solid var(--text-main);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .training-info h2 {
+            font-family: var(--font-family);
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+        }
+
+        .training-info p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            max-width: 600px;
+        }
+
+        .train-btn {
+            background: var(--text-main);
+            color: var(--bg-color);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-family: var(--font-family);
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .train-btn:hover:not(:disabled) {
+            background: var(--primary);
+            color: var(--text-main);
+        }
+
+        .train-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status-box {
+            width: 100%;
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            display: none;
+            align-items: flex-start;
+            gap: 0.75rem;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .status-box.loading {
+            display: flex;
+            background: rgba(4, 4, 4, 0.05);
+            border: 1px solid var(--text-main);
+            color: var(--text-main);
+        }
+
+        .status-box.success {
+            display: flex;
+            background: rgba(4, 4, 4, 0.05);
+            border: 2px solid var(--text-main);
+            color: var(--text-main);
+        }
+
+        .status-box.error {
+            display: flex;
+            background: rgba(236, 9, 38, 0.05);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+        }
+
+        /* Spinner */
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Data Columns Section */
+        .schema-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .schema-title-area h1 {
+            font-family: var(--font-family);
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .schema-title-area p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .search-container {
+            position: relative;
+            max-width: 320px;
+            width: 100%;
+        }
+
+        .search-input {
+            width: 100%;
+            background: var(--bg-color);
+            border: 1px solid var(--text-main);
+            border-radius: 8px;
+            padding: 0.6rem 1rem 0.6rem 2.25rem;
+            color: var(--text-main);
+            font-family: var(--font-body);
+            font-size: 0.875rem;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .search-input:focus {
+            border-color: var(--danger);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+
+        /* Grid Layout */
+        .schema-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .column-card {
+            background: var(--bg-color);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 1.25rem;
+            transition: all 0.25s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+        }
+
+        .column-card:hover {
+            border-color: var(--text-main);
+        }
+
+        .column-meta {
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .column-code {
+            font-family: monospace;
+            font-size: 0.8rem;
+            background: rgba(4, 4, 4, 0.08);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            color: var(--text-main);
+            word-break: break-all;
+        }
+
+        .column-range {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-main);
+            background: rgba(4, 4, 4, 0.08);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+        }
+
+        .column-name {
+            font-family: var(--font-family);
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+        }
+
+        .column-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            flex-grow: 1;
+        }
+
+        .column-values {
+            border-top: 1px solid var(--card-border);
+            padding-top: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            font-size: 0.75rem;
+        }
+
+        .value-mapping {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .value-badge {
+            font-weight: 700;
+            min-width: 1.5rem;
+            height: 1.25rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 3px;
+        }
+
+        .value-badge.phish {
+            background: var(--danger);
+            color: var(--bg-color);
+        }
+
+        .value-badge.susp {
+            background: var(--primary);
+            color: var(--text-main);
+        }
+
+        .value-badge.legit {
+            background: var(--text-main);
+            color: var(--bg-color);
+        }
+
+        .value-text {
+            color: var(--text-muted);
+        }
+
+        /* Footer */
+        footer {
+            margin-top: auto;
+            text-align: center;
+            padding: 2rem 0;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--card-border);
+        }
+
+        @media (max-width: 768px) {
+            .training-card {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .train-btn {
+                justify-content: center;
+            }
+            .schema-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .search-container {
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <nav>
+        <a href="/" class="nav-brand">
+            <i data-lucide="shield-alert" style="width: 24px; height: 24px;"></i>
+            <span>PhishGuard</span>
+        </a>
+        <div class="nav-links">
+            <a href="/predict" class="nav-link">Predict Risk</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        
+        <!-- Training console card -->
+        <div class="training-card">
+            <div class="training-info">
+                <h2>Model Training Pipeline</h2>
+                <p>Execute the backend pipeline to ingest the raw network signatures, perform preprocessing, cross-validate the models, and deploy the updated classifier.</p>
+                <div id="status-message" class="status-box"></div>
+            </div>
+            <div>
+                <button id="train-btn" class="train-btn" onclick="startTraining()">
+                    <i data-lucide="play" style="width: 18px; height: 18px;"></i>
+                    <span>Run Pipeline</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Data columns directory header -->
+        <div class="schema-header">
+            <div class="schema-title-area">
+                <h1>Dataset Column Index</h1>
+                <p>Review the 30 structural, content, and reputation indicators extracted from website URLs.</p>
+            </div>
+            <div class="search-container">
+                <i data-lucide="search" class="search-icon" style="width: 16px; height: 16px;"></i>
+                <input type="text" id="search-input" class="search-input" placeholder="Search columns..." oninput="filterColumns()">
+            </div>
+        </div>
+
+        <!-- Dynamic Grid of Columns -->
+        <div class="schema-grid" id="columns-grid"></div>
+
+    </div>
+
+    <footer>
+        <p>PhishGuard &bull; Minimal Prediction Interface</p>
+    </footer>
+
+    <script>
+        // Feature Definitions
+        const columns = [
+            { code: "having_IP_Address", name: "IP Address presence", description: "Detects if an IP address is used instead of a domain name in the URL to bypass browser verification.", values: { "-1": "Phishing (IP used)", "1": "Legitimate (Domain used)" }, min: -1, max: 1 },
+            { code: "URL_Length", name: "URL Length", description: "Measures the character length of the URL. Phishers use long URLs to hide malicious components.", values: { "-1": "Phishing (>= 75 chars)", "0": "Suspicious (54-74 chars)", "1": "Legitimate (< 54 chars)" }, min: -1, max: 1 },
+            { code: "Shortining_Service", name: "Shortening Service", description: "Checks if URL shortening services (e.g., bit.ly, tinyurl) are used to mask the true destination.", values: { "-1": "Phishing (Shortener used)", "1": "Legitimate (No shortener)" }, min: -1, max: 1 },
+            { code: "having_At_Symbol", name: "At Symbol (@) Presence", description: "Checks for the presence of the '@' symbol in the URL which discards preceding string components.", values: { "-1": "Phishing (Contains @)", "1": "Legitimate (No @)" }, min: -1, max: 1 },
+            { code: "double_slash_redirecting", name: "Double Slash Redirecting", description: "Detects if redirection '//' occurs inside the URL path (e.g. after the first 7 characters).", values: { "-1": "Phishing (Redirecting //)", "1": "Legitimate (Normal)" }, min: -1, max: 1 },
+            { code: "Prefix_Suffix", name: "Prefix/Suffix Dash", description: "Checks if domain contains a dash (-) symbol. Dash separators are commonly used in spoofed brands.", values: { "-1": "Phishing (Contains -)", "1": "Legitimate (No -)" }, min: -1, max: 1 },
+            { code: "having_Sub_Domain", name: "Subdomain Count", description: "Evaluates the count of subdomains. Multiple subdomains are often created to look authentic.", values: { "-1": "Phishing (>= 3 subdomains)", "0": "Suspicious (2 subdomains)", "1": "Legitimate (1 subdomain)" }, min: -1, max: 1 },
+            { code: "SSLfinal_State", name: "SSL State", description: "Verifies if the website is secured with HTTPS, uses a valid certificate authority, and has active SSL.", values: { "-1": "Phishing (No HTTPS / Untrusted)", "0": "Suspicious (HTTPS, short validity)", "1": "Legitimate (HTTPS, trusted CA)" }, min: -1, max: 1 },
+            { code: "Domain_registeration_length", name: "Domain Registration Length", description: "Evaluates domain registration duration. Phishing domains are usually registered for a year or less.", values: { "-1": "Phishing (<= 1 year left)", "1": "Legitimate (> 1 year left)" }, min: -1, max: 1 },
+            { code: "Favicon", name: "Favicon Domain Match", description: "Checks if the website favicon is hosted on an external domain.", values: { "-1": "Phishing (External favicon)", "1": "Legitimate (Same domain favicon)" }, min: -1, max: 1 },
+            { code: "port", name: "Non-standard Port", description: "Checks if the URL specifies non-standard ports which are typically closed on public servers.", values: { "-1": "Phishing (Non-standard port)", "1": "Legitimate (Standard port)" }, min: -1, max: 1 },
+            { code: "HTTPS_token", name: "HTTPS Token in Domain", description: "Checks if the string 'https' is added inside the domain part of the URL to spoof credibility.", values: { "-1": "Phishing (Token present)", "1": "Legitimate (No token)" }, min: -1, max: 1 },
+            { code: "Request_URL", name: "Request URL Source", description: "Calculates the percentage of external resource assets (images, CSS, JS) loaded from other domains.", values: { "-1": "Phishing (>= 61% external)", "1": "Legitimate (< 22% external)" }, min: -1, max: 1 },
+            { code: "URL_of_Anchor", name: "Anchor URL Source", description: "Checks the percentage of <a> anchor tags pointing to external domains, empty hrefs, or void scripts.", values: { "-1": "Phishing (>= 67% external)", "0": "Suspicious (31% - 67%)", "1": "Legitimate (< 31% external)" }, min: -1, max: 1 },
+            { code: "Links_in_tags", name: "Links in Tags", description: "Checks percentage of links in meta, script, and link elements pointing to external domains.", values: { "-1": "Phishing (>= 81% external)", "0": "Suspicious (17% - 81%)", "1": "Legitimate (< 17% external)" }, min: -1, max: 1 },
+            { code: "SFH", name: "Server Form Handler", description: "Checks actions on form submissions. Phishing sites submit to blank pages, empty URLs, or external domains.", values: { "-1": "Phishing (Empty/blank)", "0": "Suspicious (External domain)", "1": "Legitimate (Same domain)" }, min: -1, max: 1 },
+            { code: "Submitting_to_email", name: "Mailto: Form Submission", description: "Checks if the form action redirects data to an email address using 'mailto:'.", values: { "-1": "Phishing (mailto: used)", "1": "Legitimate (No mailto:)" }, min: -1, max: 1 },
+            { code: "Abnormal_URL", name: "Abnormal URL Structure", description: "Checks if the URL host matches the host identified in the WHOIS database record.", values: { "-1": "Phishing (WHOIS mismatch)", "1": "Legitimate (WHOIS match)" }, min: -1, max: 1 },
+            { code: "Redirect", name: "Redirection Count", description: "Measures the number of redirects. Phishing sites use redirection chains to hide endpoints.", values: { "0": "Legitimate (<= 1 redirect)", "1": "Phishing (>= 2 redirects)" }, min: 0, max: 1 },
+            { code: "on_mouseover", name: "On Mouseover Status", description: "Checks if JavaScript is used to change the browser status bar on hover, hiding destinations.", values: { "-1": "Phishing (Status bar changed)", "1": "Legitimate (No change)" }, min: -1, max: 1 },
+            { code: "RightClick", name: "Right-Click Disable", description: "Detects if JavaScript disables the right-click menu, hiding developer inspection tools.", values: { "-1": "Phishing (Right-click disabled)", "1": "Legitimate (Right-click enabled)" }, min: -1, max: 1 },
+            { code: "popUpWidnow", name: "Popup Window Fields", description: "Checks if credentials or sensitive inputs are displayed inside popup windows.", values: { "-1": "Phishing (Popup has fields)", "1": "Legitimate (No popup fields)" }, min: -1, max: 1 },
+            { code: "Iframe", name: "Iframe Usage", description: "Checks for the presence of an iframe tag which can be used to execute clickjacking.", values: { "-1": "Phishing (Iframe present)", "1": "Legitimate (No iframe)" }, min: -1, max: 1 },
+            { code: "age_of_domain", name: "Domain Age", description: "Measures the age of the domain from WHOIS records. Phishing domains are usually newer.", values: { "-1": "Phishing (< 6 months age)", "1": "Legitimate (>= 6 months age)" }, min: -1, max: 1 },
+            { code: "DNSRecord", name: "DNS Record Check", description: "Checks if the website's domain has a valid DNS record in the WHOIS database.", values: { "-1": "Phishing (No DNS record)", "1": "Legitimate (DNS record exists)" }, min: -1, max: 1 },
+            { code: "web_traffic", name: "Web Traffic Rank", description: "Evaluates popularity rankings. Phishing pages are short-lived and typically have low rank.", values: { "-1": "Phishing (Rank > 150k or none)", "0": "Suspicious (Rank 100k - 150k)", "1": "Legitimate (Rank < 100k)" }, min: -1, max: 1 },
+            { code: "Page_Rank", name: "Page Rank Value", description: "Evaluates the PageRank of the domain. Most phishing sites have low PageRank.", values: { "-1": "Phishing (PageRank < 0.2)", "1": "Legitimate (PageRank >= 0.2)" }, min: -1, max: 1 },
+            { code: "Google_Index", name: "Google Index Status", description: "Checks if the website is indexed by Google search engines.", values: { "-1": "Phishing (Not indexed)", "1": "Legitimate (Indexed)" }, min: -1, max: 1 },
+            { code: "Links_pointing_to_page", name: "Incoming Links Count", description: "Measures backlinks pointing to the webpage. Phishing sites have very few inbound links.", values: { "-1": "Phishing (0 links pointing)", "0": "Suspicious (1-2 links pointing)", "1": "Legitimate (> 2 links)" }, min: -1, max: 1 },
+            { code: "Statistical_report", name: "Statistical Report Match", description: "Checks if domain/IP matches blocklists compiled by security agencies.", values: { "-1": "Phishing (Matches blocklist)", "1": "Clean record" }, min: -1, max: 1 }
+        ];
+
+        // Render data dictionary
+        function renderColumns(data = columns) {
+            const grid = document.getElementById("columns-grid");
+            grid.innerHTML = "";
+
+            data.forEach(col => {
+                const card = document.createElement("div");
+                card.className = "column-card";
+
+                // Generate value mapping badges
+                let valuesHtml = "";
+                Object.entries(col.values).forEach(([val, label]) => {
+                    let badgeClass = "susp";
+                    if (val === "-1") badgeClass = "phish";
+                    if (val === "1") badgeClass = "legit";
+
+                    valuesHtml += `
+                        <div class="value-mapping">
+                            <span class="value-badge ${badgeClass}">${val}</span>
+                            <span class="value-text">${label}</span>
+                        </div>
+                    `;
+                });
+
+                card.innerHTML = `
+                    <div>
+                        <div class="column-meta">
+                            <span class="column-code">${col.code}</span>
+                            <span class="column-range">[${col.min} to ${col.max}]</span>
+                        </div>
+                        <h3 class="column-name">${col.name}</h3>
+                        <p class="column-desc">${col.description}</p>
+                    </div>
+                    <div class="column-values">
+                        ${valuesHtml}
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Filter functionality
+        function filterColumns() {
+            const query = document.getElementById("search-input").value.toLowerCase();
+            const filtered = columns.filter(col => 
+                col.code.toLowerCase().includes(query) || 
+                col.name.toLowerCase().includes(query) || 
+                col.description.toLowerCase().includes(query)
+            );
+            renderColumns(filtered);
+        }
+
+        // Training trigger & loading feedback
+        async function startTraining() {
+            const btn = document.getElementById("train-btn");
+            const statusBox = document.getElementById("status-message");
+
+            // UI loading state
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="spinner" style="width: 18px; height: 18px;"></i><span>Training...</span>`;
+            lucide.createIcons();
+
+            statusBox.className = "status-box loading";
+            statusBox.innerHTML = `
+                <i data-lucide="clock" style="width: 18px; height: 18px; flex-shrink: 0; margin-top: 2px;"></i>
+                <div>
+                    <strong>Pipeline Triggered:</strong> Model training is currently in progress. This step executes data validation, preprocessing transformations, and registers the final classifier model. Please wait.
+                </div>
+            `;
+            lucide.createIcons();
+
+            try {
+                const response = await fetch("/train");
+                if (response.ok) {
+                    const text = await response.text();
+                    statusBox.className = "status-box success";
+                    statusBox.innerHTML = `
+                        <i data-lucide="check-circle-2" style="width: 18px; height: 18px; flex-shrink: 0; margin-top: 2px;"></i>
+                        <div>
+                            <strong>Success:</strong> ${text || "Pipeline run completed successfully. Your predictive model has been updated."}
+                        </div>
+                    `;
+                } else {
+                    const errText = await response.text();
+                    statusBox.className = "status-box error";
+                    statusBox.innerHTML = `
+                        <i data-lucide="alert-triangle" style="width: 18px; height: 18px; flex-shrink: 0; margin-top: 2px;"></i>
+                        <div>
+                            <strong>Training Failed:</strong> Server returned code ${response.status}. Detail: ${errText || "Unknown backend error"}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                statusBox.className = "status-box error";
+                statusBox.innerHTML = `
+                    <i data-lucide="alert-triangle" style="width: 18px; height: 18px; flex-shrink: 0; margin-top: 2px;"></i>
+                    <div>
+                        <strong>Connection Error:</strong> Could not contact the training backend. ${error.message}
+                    </div>
+                `;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i data-lucide="play" style="width: 18px; height: 18px;"></i><span>Run Pipeline</span>`;
+                lucide.createIcons();
+            }
+        }
+
+        // Initialize elements
+        renderColumns();
+        lucide.createIcons();
+    </script>
+</body>
+</html>
