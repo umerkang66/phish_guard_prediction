@@ -1,5 +1,7 @@
 import sys
+from datetime import datetime
 
+from src.cloud.s3_syncer import S3Sync
 from src.exception import CustomException
 from src.logger import logging
 
@@ -7,6 +9,7 @@ from src.components.data_ingestion import DataIngestion
 from src.components.data_validation import DataValidation
 from src.components.data_transformation import DataTransformation
 from src.components.model_trainer import ModelTrainer
+from src.constants.training_pipeline_constants import TRAINING_BUCKET_NAME
 
 from src.entity.config_entity import (
     DataIngestionConfigEntity,
@@ -28,6 +31,7 @@ class TrainingPipeline:
     def __init__(self):
         try:
             self.training_pipeline_config = TrainingPipelineConfigEntity()
+            self.s3_sync = S3Sync()
         except Exception as e:
             raise CustomException(e, sys)
 
@@ -94,6 +98,30 @@ class TrainingPipeline:
         except Exception as e:
             raise CustomException(e, sys)
 
+    def sync_artifact_dir_to_s3(self):
+        try:
+            logging.info("Syncing artifact directory to S3 started.")
+            aws_bucket_url = f"s3://{TRAINING_BUCKET_NAME}/artifacts{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+            self.s3_sync.sync_folder_to_s3(
+                folder=self.training_pipeline_config.artifact_dir,
+                aws_bucket_url=aws_bucket_url,
+            )
+            logging.info("Syncing artifact directory to S3 completed successfully.")
+        except Exception as e:
+            raise CustomException(e, sys)
+
+    def sync_saved_model_dir_to_s3(self):
+        try:
+            logging.info("Syncing saved model directory to S3 started.")
+            aws_bucket_url = f"s3://{TRAINING_BUCKET_NAME}/final_model/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+            self.s3_sync.sync_folder_to_s3(
+                folder="final_model",  # Assuming saved models are stored in a directory named 'final_model'
+                aws_bucket_url=aws_bucket_url,
+            )
+            logging.info("Syncing saved model directory to S3 completed successfully.")
+        except Exception as e:
+            raise CustomException(e, sys)
+
     def run_pipeline(self):
         try:
             logging.info("Training pipeline Started.")
@@ -111,6 +139,9 @@ class TrainingPipeline:
             model_trainer_artifact = self.start_model_trainer(
                 data_transformation_artifact=data_transformation_artifact
             )
+
+            self.sync_artifact_dir_to_s3()
+            self.sync_saved_model_dir_to_s3()
 
             print(f"Model Trainer Artifact: {model_trainer_artifact}")
 
