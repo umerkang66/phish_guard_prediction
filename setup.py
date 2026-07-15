@@ -17,7 +17,7 @@ def get_requirements(file_path: str) -> List[str]:
 
 
 setup(
-    name="NetworkSecurityProject",
+    name="PhishGaurdPrediction",
     version="0.0.1",
     author="Muhammad Umer",
     author_email="ugulzar4512@gmail.com",
