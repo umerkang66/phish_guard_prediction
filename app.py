@@ -7,7 +7,7 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 import pymongo
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile
 from uvicorn import run
 from fastapi.responses import Response, HTMLResponse
 import pandas as pd
@@ -94,6 +94,61 @@ async def predict_route(input_data: PhishingPredictInput):
         result_label = "Legitimate" if pred_val == 1 else "Phishing"
 
         return {"prediction": pred_val, "label": result_label, "status": "success"}
+    except Exception as e:
+        raise CustomException(e, sys)
+
+
+@app.post("/predict_batch", tags=["prediction"])
+async def predict_batch(file: UploadFile = File(...)):
+    try:
+        # Check file extension
+        if not file.filename.endswith(".csv"):
+            return Response(content="Invalid file format. Please upload a .csv file.", status_code=400)
+        
+        # Ensure upload folder exists
+        upload_dir = os.path.join(os.getcwd(), "upload")
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        # Save file to local folder
+        file_path = os.path.join(upload_dir, file.filename)
+        with open(file_path, "wb") as buffer:
+            buffer.write(await file.read())
+        
+        # Read uploaded CSV file from saved location
+        df = pd.read_csv(file_path)
+        
+        # Import BatchPredictionPipeline
+        from src.pipeline.batch_prediction_pipeline import BatchPredictionPipeline
+        
+        batch_pipeline = BatchPredictionPipeline()
+        if not batch_pipeline.model_files_exist():
+            return Response(
+                content="Model or Preprocessing objects do not exist. Please train the model first.",
+                status_code=400,
+            )
+            
+        # Run predictions
+        try:
+            result_df = batch_pipeline.predict(df)
+        except ValueError as ve:
+            return Response(content=str(ve), status_code=400)
+        
+        # We need to return the data back to client to show in the table.
+        records = result_df.to_dict(orient="records")
+        columns = list(result_df.columns)
+        
+        # Check if the target column (Result) was in the input data
+        from src.constants.training_pipeline_constants import TARGET_COLUMN
+        has_target = TARGET_COLUMN in df.columns
+        
+        return {
+            "status": "success",
+            "columns": columns,
+            "has_target": has_target,
+            "target_column": TARGET_COLUMN,
+            "records": records
+        }
+        
     except Exception as e:
         raise CustomException(e, sys)
 
