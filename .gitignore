@@ -85,3 +85,4 @@ venv.bak/
 Thumbs.db
 mlruns
 
+!final_model/*
