@@ -90,6 +90,15 @@ class DataTransformation:
                 data_transformer,
             )
 
+            # save the data transformer object for predictions
+            final_model_dir = os.path.join(os.getcwd(), "final_model")
+            os.makedirs(final_model_dir, exist_ok=True)
+
+            # save the best model for prediction
+            save_object(
+                os.path.join(final_model_dir, "preprocessing.pkl"), data_transformer
+            )
+
             logging.info("Ended data transformation process.")
 
             # preparing artifacts

@@ -31,6 +31,10 @@ from src.utils import (
     NetworkModel,
 )
 
+import dagshub
+
+dagshub.init(repo_owner="ugulzar4512", repo_name="phish_guard_prediction", mlflow=True)
+
 
 class ModelTrainer:
     def __init__(
@@ -169,6 +173,12 @@ class ModelTrainer:
             save_object(
                 self.model_trainer_config.trained_model_file_path, obj=network_model
             )
+
+            final_model_dir = os.path.join(os.getcwd(), "final_model")
+            os.makedirs(final_model_dir, exist_ok=True)
+
+            # save the best model for prediction
+            save_object(os.path.join(final_model_dir, "model.pkl"), best_model)
 
             return ModelTrainerArtifactEntity(
                 trained_model_file_path=self.model_trainer_config.trained_model_file_path,

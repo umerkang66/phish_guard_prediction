@@ -12,4 +12,5 @@ catboost
 pyaml
 dill
 mlflow
+dagshub
 -e .
