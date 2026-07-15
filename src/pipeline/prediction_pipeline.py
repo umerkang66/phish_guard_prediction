@@ -3,7 +3,7 @@ import sys
 import pandas as pd
 from src.exception import CustomException
 from src.logger import logging
-from src.utils import load_object
+from src.utils import load_object, NetworkModel
 
 class PredictionPipeline:
     def __init__(self):
@@ -27,11 +27,9 @@ class PredictionPipeline:
             preprocessor = load_object(self.preprocessing_path)
             model = load_object(self.model_path)
 
-            logging.info("Transforming dataframe using preprocessor.")
-            transformed_data = preprocessor.transform(dataframe)
-
-            logging.info("Generating predictions.")
-            prediction = model.predict(transformed_data)
+            logging.info("Generating predictions using NetworkModel.")
+            network_model = NetworkModel(preprocessor=preprocessor, model=model)
+            prediction = network_model.predict(dataframe)
             return int(prediction[0])
         except Exception as e:
             raise CustomException(e, sys)

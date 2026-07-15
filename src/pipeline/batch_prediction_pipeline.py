@@ -4,7 +4,7 @@ import pandas as pd
 import yaml
 from src.exception import CustomException
 from src.logger import logging
-from src.utils import load_object
+from src.utils import load_object, NetworkModel
 from src.constants.training_pipeline_constants import TARGET_COLUMN, SCHEMA_FILE_PATH
 
 class BatchPredictionPipeline:
@@ -54,11 +54,9 @@ class BatchPredictionPipeline:
             preprocessor = load_object(self.preprocessing_path)
             model = load_object(self.model_path)
 
-            logging.info("Transforming batch dataframe using preprocessor.")
-            transformed_data = preprocessor.transform(df_features)
-
-            logging.info("Generating batch predictions.")
-            predictions = model.predict(transformed_data)
+            logging.info("Generating batch predictions using NetworkModel.")
+            network_model = NetworkModel(preprocessor=preprocessor, model=model)
+            predictions = network_model.predict(df_features)
 
             # Create a copy of dataframe to append predictions
             result_df = dataframe.copy()
