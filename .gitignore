@@ -80,7 +80,6 @@ venv.bak/
 *.swp
 *.swo
 
-# OS generated files
 .DS_Store
 Thumbs.db
 mlruns
