@@ -158,4 +158,4 @@ async def predict_batch(file: UploadFile = File(...)):
 
 
 if __name__ == "__main__":
-    run(app, host="localhost", port=8080)
+    run(app, host="0.0.0.0", port=8080)
