@@ -136,7 +136,7 @@ async def predict_batch(file: UploadFile = File(...)):
         except ValueError as ve:
             return Response(content=str(ve), status_code=400)
 
-        # We need to return the data back to client to show in the table.
+        # We need to return the data back to client to show in the table
         records = result_df.to_dict(orient="records")
         columns = list(result_df.columns)
 
