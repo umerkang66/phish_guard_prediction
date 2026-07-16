@@ -91,6 +91,7 @@ jobs:
       - name: Run Docker Image to serve users
         run: |
           docker run -d -p 8080:8080 --ipc="host" --name=networksecurity \
+            -e DATABASE_URL=${{secrets.DATABASE_URL}} \
             -e MLFLOW_TRACKING_URI="https://dagshub.com/ugulzar4512/phish_guard_prediction.mlflow" \
             -e MLFLOW_TRACKING_USERNAME="ugulzar4512" \
             -e MLFLOW_TRACKING_PASSWORD=${{secrets.DAGSHUB_PASSWORD}} \
