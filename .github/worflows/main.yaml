@@ -1,6 +1,6 @@
 name: workflow
 
-app:
+on:
   push:
     branches:
       - main
